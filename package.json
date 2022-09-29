@@ -1,0 +1,41 @@
+{
+  "name": "@sevn.finance/token",
+  "version": "1.0.0",
+  "description": "🎚 SEVN Token",
+  "engines": {
+    "node": ">=10"
+  },
+  "homepage": "https://www.sevn.finance/",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Sevn-finance/sevn-token"
+  },
+  "files": [
+    "build",
+    "contracts"
+  ],
+  "dependencies": {
+    "@ethersproject/solidity": "^5.7.0",
+    "@openzeppelin/contracts": "^4.7.3",
+    "@truffle/hdwallet-provider": "^2.0.14",
+    "dotenv": "^16.0.2"
+  },
+  "devDependencies": {
+    "@types/chai": "^4.2.6",
+    "@types/mocha": "^5.2.7",
+    "chai": "^4.2.0",
+    "ethereum-waffle": "^2.4.1",
+    "ethereumjs-util": "^6.2.0",
+    "mocha": "^6.2.2",
+    "ncp": "^2.0.0",
+    "prettier": "^1.19.1",
+    "rimraf": "^3.0.0",
+    "solc": "0.8.16",
+    "ts-node": "^8.5.4",
+    "typescript": "^3.7.3",
+    "truffle-assertions": "^0.9.2",
+    "big-number": "^2.0.0",
+    "bignumber.js": "^9.0.1"
+  },
+  "license": "GPL-3.0-or-later"
+}
