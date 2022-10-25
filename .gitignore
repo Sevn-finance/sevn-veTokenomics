@@ -1,5 +1,7 @@
 node_modules/
 build/
+artifacts/
+cache/
 env.json
 bin/
 .env

@@ -10,11 +10,13 @@ import "./VeERC20.sol";
 /// @title Vote Escrow Sevn Token - veSEVN
 /// @author Sevn.finance
 /// @notice Infinite supply, used to receive extra farming yields and voting power
-contract VeSevn is VeERC20("VeSevn", "veSEVN"), Ownable {
+contract VeSevn is VeERC20, Ownable {
     /// @notice the BoostedMasterChefSevn contract
     IBoostedMasterChefSevn public boostedMasterChef;
 
     event UpdateBoostedMasterChefSevn(address indexed user, address boostedMasterChef);
+
+    constructor() VeERC20("VeSevn", "veSEVN"){}
 
     /// @dev Creates `_amount` token to `_to`. Must only be called by the owner (VeSevnStaking)
     /// @param _to The address that will receive the mint
@@ -35,7 +37,6 @@ contract VeSevn is VeERC20("VeSevn", "veSEVN"), Ownable {
     function setBoostedMasterChefSevn(address _boostedMasterChef) external onlyOwner {
         // We allow 0 address here if we want to disable the callback operations
         boostedMasterChef = IBoostedMasterChefSevn(_boostedMasterChef);
-
         emit UpdateBoostedMasterChefSevn(_msgSender(), _boostedMasterChef);
     }
 
