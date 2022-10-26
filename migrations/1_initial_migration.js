@@ -1,5 +1,5 @@
-const Migrations = artifacts.require("Migrations");
+const VeSevn = artifacts.require("VeSevn");
 
-module.exports = function (deployer) {
-  deployer.deploy(Migrations);
+module.exports = async function (deployer) {
+  await deployer.deploy(VeSevn);
 };

@@ -21,9 +21,6 @@ contract('veSevn', ([owner, deployer]) => {
         await expect(this.instanse.transferOwnership(owner, {from: owner})).to.be.revertedWith('Ownable: caller is not the owner')
         await this.instanse.transferOwnership(owner, {from: deployer})
         await expect(this.instanse.renounceOwnership({from: owner})).to.be.revertedWith('VeSevnToken: Cannot renounce, can only transfer ownership')
-    
-        await expect(this.instanse.setBoostedMasterChefSevn('0x0000000000000000000000000000000000000000', {from: deployer})).to.be.revertedWith('Ownable: caller is not the owner')
-        await this.instanse.setBoostedMasterChefSevn('0x0000000000000000000000000000000000000000', {from: owner})
     })
 
     it('mint', async function(){
