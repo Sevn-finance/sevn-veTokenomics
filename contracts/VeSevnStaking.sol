@@ -7,6 +7,7 @@ import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
+import "./interfaces/IBoostedMasterChefSevn.sol";
 import "./VeSevn.sol";
 
 /// @title Vote Escrow Sevn Staking
@@ -49,6 +50,9 @@ contract VeSevnStaking is Ownable {
     IERC20 public sevn;
     VeSevn public veSevn;
 
+    /// @notice the BoostedMasterChefSevn contract
+    IBoostedMasterChefSevn public boostedMasterChef;
+
      /// @notice The maximum limit of veSEVN user can have as percentage points of staked SEVN
     /// For example, if user has `n` SEVN staked, they can own a maximum of `n * maxCapPct / 100` veSEVN.
     uint256 public maxCapPct;
@@ -79,7 +83,7 @@ contract VeSevnStaking is Ownable {
 
     /// @notice Percentage of user's current staked SEVN user has to deposit in order to start
     /// receiving speed up benefits, in parts per 100.
-    /// @dev Specifically, user has to deposit at least `speedUpThreshold/100 * userStakedJoe` SEVN.
+    /// @dev Specifically, user has to deposit at least `speedUpThreshold/100 * userStakedSevn` SEVN.
     /// The only exception is the user will also receive speed up benefits if they are depositing
     /// with zero balance
     uint256 public speedUpThreshold;
@@ -96,6 +100,7 @@ contract VeSevnStaking is Ownable {
     event UpdateSpeedUpThreshold(address indexed user, uint256 speedUpThreshold);
     event UpdateVeSevnPerSharePerSec(address indexed user, uint256 veSevnPerSharePerSec);
     event Withdraw(address indexed user, uint256 withdrawAmount, uint256 burnAmount);
+    event UpdateBoostedMasterChefSevn(address indexed user, address boostedMasterChef);
 
     constructor(
         IERC20 _sevn,
@@ -145,7 +150,7 @@ contract VeSevnStaking is Ownable {
         VESEVN_PER_SHARE_PER_SEC_PRECISION = 1e18;
     }
 
-     /// @notice Set maxCapPct
+    /// @notice Set maxCapPct
     /// @param _maxCapPct The new maxCapPct
     function setMaxCapPct(uint256 _maxCapPct) external onlyOwner {
         require(_maxCapPct > maxCapPct, "VeSevnStaking: expected new _maxCapPct to be greater than existing maxCapPct");
@@ -175,9 +180,17 @@ contract VeSevnStaking is Ownable {
         require(
             _speedUpThreshold != 0 && _speedUpThreshold <= 100,
             "VeSevnStaking: expected _speedUpThreshold to be > 0 and <= 100"
-        );
+        );  
         speedUpThreshold = _speedUpThreshold;
         emit UpdateSpeedUpThreshold(_msgSender(), _speedUpThreshold);
+    }
+
+    /// @dev Sets the address of the master chef contract this updates
+    /// @param _boostedMasterChef the address of BoostedMasterChefSevn
+    function setBoostedMasterChefSevn(address _boostedMasterChef) external onlyOwner {
+        // We allow 0 address here if we want to disable the callback operations
+        boostedMasterChef = IBoostedMasterChefSevn(_boostedMasterChef);
+        emit UpdateBoostedMasterChefSevn(_msgSender(), _boostedMasterChef);
     }
 
     /// @notice Deposits SEVN to start staking for veSEVN. Note that any pending veSEVN
@@ -198,11 +211,11 @@ contract VeSevnStaking is Ownable {
             // passive veSEVN accrual if user hit their max cap.
             userInfo.lastClaimTimestamp = block.timestamp;
 
-            uint256 userStakedJoe = userInfo.balance;
+            uint256 userStakedSevn = userInfo.balance;
 
             // User is eligible for speed up benefits if `_amount` is at least
-            // `speedUpThreshold / 100 * userStakedJoe`
-            if (_amount.mul(100) >= speedUpThreshold.mul(userStakedJoe)) {
+            // `speedUpThreshold / 100 * userStakedSevn`
+            if (_amount.mul(100) >= speedUpThreshold.mul(userStakedSevn)) {
                 userInfo.speedUpEndTimestamp = block.timestamp.add(speedUpDuration);
             }
         } else {
@@ -243,7 +256,7 @@ contract VeSevnStaking is Ownable {
         // Burn the user's current veSEVN balance
         uint256 userVeSevnBalance = veSevn.balanceOf(_msgSender());
         veSevn.burnFrom(_msgSender(), userVeSevnBalance);
-
+        _updateFactor(_msgSender());
         // Send user their requested amount of staked SEVN
         sevn.safeTransfer(_msgSender(), _amount);
 
@@ -356,7 +369,15 @@ contract VeSevnStaking is Ownable {
             userInfo.lastClaimTimestamp = block.timestamp;
 
             veSevn.mint(_msgSender(), veSevnToClaim);
+            _updateFactor(_msgSender());
             emit Claim(_msgSender(), veSevnToClaim);
+        }
+    }
+
+    function _updateFactor(address _account) internal {
+        if (address(boostedMasterChef) != address(0)) {
+            uint256 balance = veSevn.balanceOf(_account);
+            boostedMasterChef.updateFactor(_account, balance);
         }
     }
 
