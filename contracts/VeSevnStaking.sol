@@ -201,7 +201,7 @@ contract VeSevnStaking is Ownable {
 
         updateRewardVars();
 
-        UserInfo storage userInfo = userInfo[_msgSender()];
+        UserInfo storage user = userInfo[_msgSender()];
 
         if (_getUserHasNonZeroBalance(_msgSender())) {
             // Transfer to the user their pending veSEVN before updating their UserInfo
@@ -209,24 +209,24 @@ contract VeSevnStaking is Ownable {
 
             // We need to update user's `lastClaimTimestamp` to now to prevent
             // passive veSEVN accrual if user hit their max cap.
-            userInfo.lastClaimTimestamp = block.timestamp;
+            user.lastClaimTimestamp = block.timestamp;
 
-            uint256 userStakedSevn = userInfo.balance;
+            uint256 userStakedSevn = user.balance;
 
             // User is eligible for speed up benefits if `_amount` is at least
             // `speedUpThreshold / 100 * userStakedSevn`
             if (_amount.mul(100) >= speedUpThreshold.mul(userStakedSevn)) {
-                userInfo.speedUpEndTimestamp = block.timestamp.add(speedUpDuration);
+                user.speedUpEndTimestamp = block.timestamp.add(speedUpDuration);
             }
         } else {
             // If user is depositing with zero balance, they will automatically
             // receive speed up benefits
-            userInfo.speedUpEndTimestamp = block.timestamp.add(speedUpDuration);
-            userInfo.lastClaimTimestamp = block.timestamp;
+            user.speedUpEndTimestamp = block.timestamp.add(speedUpDuration);
+            user.lastClaimTimestamp = block.timestamp;
         }
 
-        userInfo.balance = userInfo.balance.add(_amount);
-        userInfo.rewardDebt = accVeSevnPerShare.mul(userInfo.balance).div(ACC_VESEVN_PER_SHARE_PRECISION);
+        user.balance = user.balance.add(_amount);
+        user.rewardDebt = accVeSevnPerShare.mul(user.balance).div(ACC_VESEVN_PER_SHARE_PRECISION);
 
         sevn.safeTransferFrom(_msgSender(), address(this), _amount);
 
@@ -239,19 +239,19 @@ contract VeSevnStaking is Ownable {
     function withdraw(uint256 _amount) external {
         require(_amount > 0, "VeSevnStaking: expected withdraw amount to be greater than zero");
 
-        UserInfo storage userInfo = userInfo[_msgSender()];
+        UserInfo storage user = userInfo[_msgSender()];
 
         require(
-            userInfo.balance >= _amount,
+            user.balance >= _amount,
             "VeSevnStaking: cannot withdraw greater amount of SEVN than currently staked"
         );
         updateRewardVars();
 
         // Note that we don't need to claim as the user's veSEVN balance will be reset to 0
-        userInfo.balance = userInfo.balance.sub(_amount);
-        userInfo.rewardDebt = accVeSevnPerShare.mul(userInfo.balance).div(ACC_VESEVN_PER_SHARE_PRECISION);
-        userInfo.lastClaimTimestamp = block.timestamp;
-        userInfo.speedUpEndTimestamp = 0;
+        user.balance = user.balance.sub(_amount);
+        user.rewardDebt = accVeSevnPerShare.mul(user.balance).div(ACC_VESEVN_PER_SHARE_PRECISION);
+        user.lastClaimTimestamp = block.timestamp;
+        user.speedUpEndTimestamp = 0;
 
         // Burn the user's current veSEVN balance
         uint256 userVeSevnBalance = veSevn.balanceOf(_msgSender());
@@ -356,17 +356,17 @@ contract VeSevnStaking is Ownable {
     function _claim() private {
         uint256 veSevnToClaim = getPendingVeSevn(_msgSender());
 
-        UserInfo storage userInfo = userInfo[_msgSender()];
+        UserInfo storage user = userInfo[_msgSender()];
 
-        userInfo.rewardDebt = accVeSevnPerShare.mul(userInfo.balance).div(ACC_VESEVN_PER_SHARE_PRECISION);
+        user.rewardDebt = accVeSevnPerShare.mul(user.balance).div(ACC_VESEVN_PER_SHARE_PRECISION);
 
         // If user's speed up period has ended, reset `speedUpEndTimestamp` to 0
-        if (userInfo.speedUpEndTimestamp != 0 && block.timestamp >= userInfo.speedUpEndTimestamp) {
-            userInfo.speedUpEndTimestamp = 0;
+        if (user.speedUpEndTimestamp != 0 && block.timestamp >= user.speedUpEndTimestamp) {
+            user.speedUpEndTimestamp = 0;
         }
 
         if (veSevnToClaim > 0) {
-            userInfo.lastClaimTimestamp = block.timestamp;
+            user.lastClaimTimestamp = block.timestamp;
 
             veSevn.mint(_msgSender(), veSevnToClaim);
             _updateFactor(_msgSender());

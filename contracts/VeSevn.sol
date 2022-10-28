@@ -27,7 +27,7 @@ contract VeSevn is VeERC20, Ownable {
         _burn(_from, _amount);
     }
 
-    function renounceOwnership() public override onlyOwner {
+    function renounceOwnership() public override view onlyOwner {
         revert("VeSevnToken: Cannot renounce, can only transfer ownership");
     }
 }
